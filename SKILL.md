@@ -2,8 +2,9 @@
 name: truenas-skill
 description: >
   Manage TrueNAS SCALE via API. Check pool health, manage datasets and snapshots,
-  monitor alerts, control services, manage apps, and orchestrate Dockge container stacks.
-  Use when the user asks about their NAS, storage, backups, containers, or homelab services.
+  monitor alerts, control services, manage apps, orchestrate Dockge container stacks,
+  and manage bookmarks. Use when the user asks about their NAS, storage, backups,
+  containers, bookmarks, or homelab services.
 license: MIT
 compatibility: Requires curl, jq, and Node.js 18+. Network access to TrueNAS instance.
 metadata:
@@ -54,13 +55,18 @@ CHANGEDETECTION_URL, CHANGEDETECTION_API_KEY
 CRAFTY_URL, CRAFTY_API_KEY           — Game servers
 LAZYLIBRARIAN_URL, LAZYLIBRARIAN_API_KEY
 METUBE_URL                           — YouTube downloader
+KARAKEEP_URL, KARAKEEP_API_KEY       — Bookmarks with AI tagging
 ```
 
 ## API Notes
 
 **HTTPS REQUIRED:** TrueNAS auto-revokes API keys used over HTTP.
 
-### REST API
+> **REST API Deprecation Notice:** The REST API (`/api/v2.0/`) is deprecated in TrueNAS 25.04
+> and **fully removed in 26.04**. Use the WebSocket API (via `scripts/truenas-ws.mjs`) as
+> the forward-compatible method. REST examples below still work on 24.10 and 25.x.
+
+### REST API (Legacy)
 
 ```bash
 curl -sk "$TRUENAS_URL/api/v2.0/[endpoint]" \
@@ -69,7 +75,7 @@ curl -sk "$TRUENAS_URL/api/v2.0/[endpoint]" \
 
 The `-k` flag is needed for self-signed certificates (common on home servers).
 
-### WebSocket API
+### WebSocket API (Recommended)
 
 The WebSocket API uses a DDP-like protocol (Meteor style). REST paths become dot notation:
 `/api/v2.0/app` → `app.query`, `/api/v2.0/system/info` → `system.info`.
@@ -103,12 +109,15 @@ curl -sk "$TRUENAS_URL/api/v2.0/system/info" -H "Authorization: Bearer $TRUENAS_
 ### Pool Health
 
 ```bash
-# All pools with status
+# All pools with health status
 curl -sk "$TRUENAS_URL/api/v2.0/pool" -H "Authorization: Bearer $TRUENAS_API_KEY" \
-  | jq '.[] | {name, status: .status.state}'
+  | jq '.[] | {name, healthy}'
+
+# Or via WebSocket
+node scripts/truenas-ws.mjs pool.query '[]'
 ```
 
-Look for `ONLINE` (healthy), `DEGRADED` (disk failed), or `OFFLINE`.
+The API returns a `.healthy` boolean per pool. For deeper status, inspect the full pool object.
 
 ### Active Alerts
 
@@ -155,17 +164,14 @@ curl -sk -X DELETE "$TRUENAS_URL/api/v2.0/pool/dataset/id/DATASET_ID" \
 ### List Snapshots
 
 ```bash
-curl -sk "$TRUENAS_URL/api/v2.0/zfs/snapshot" -H "Authorization: Bearer $TRUENAS_API_KEY" \
-  | jq '.[] | {name, dataset}'
+# WebSocket (required on 25.10+, /api/v2.0/zfs/snapshot returns 404)
+node scripts/truenas-ws.mjs zfs.snapshot.query '[]'
 ```
 
 ### Create Snapshot
 
 ```bash
-curl -sk -X POST "$TRUENAS_URL/api/v2.0/zfs/snapshot" \
-  -H "Authorization: Bearer $TRUENAS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"dataset": "pool/dataset", "name": "manual-YYYY-MM-DD"}'
+node scripts/truenas-ws.mjs zfs.snapshot.create '[{"dataset": "pool/dataset", "name": "manual-YYYY-MM-DD"}]'
 ```
 
 ### Snapshot Task Status
@@ -265,7 +271,7 @@ Run these commands for a quick health overview:
 ```bash
 # Pool health
 curl -sk "$TRUENAS_URL/api/v2.0/pool" -H "Authorization: Bearer $TRUENAS_API_KEY" \
-  | jq '.[] | {name, status: .status.state}'
+  | jq '.[] | {name, healthy}'
 
 # Active alerts
 curl -sk "$TRUENAS_URL/api/v2.0/alert/list" -H "Authorization: Bearer $TRUENAS_API_KEY" \
@@ -297,6 +303,7 @@ TrueNAS:
 | Download clients | qBittorrent, SABnzbd, FlareSolverr | `references/downloads.md` |
 | Homelab services | ntfy, Syncthing, n8n, NocoDB, ChangeDetection, Crafty | `references/homelab-services.md` |
 | Books & media | Audiobookshelf, LazyLibrarian, Calibre-Web, MeTube | `references/books-and-media.md` |
+| Bookmarks | Karakeep (AI-powered bookmark manager) | `references/bookmarks.md` |
 
 Load the relevant reference file when the user asks about a specific service category.
 
@@ -328,10 +335,7 @@ Follow the guide in `references/app-installation.md`:
 ### "Take a snapshot"
 
 ```bash
-curl -sk -X POST "$TRUENAS_URL/api/v2.0/zfs/snapshot" \
-  -H "Authorization: Bearer $TRUENAS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"dataset": "pool/dataset", "name": "manual-snapshot-name"}'
+node scripts/truenas-ws.mjs zfs.snapshot.create '[{"dataset": "pool/dataset", "name": "manual-snapshot-name"}]'
 ```
 
 ### "What's downloading?"

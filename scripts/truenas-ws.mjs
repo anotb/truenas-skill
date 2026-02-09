@@ -22,12 +22,24 @@ if (!TRUENAS_API_KEY) {
   process.exit(1);
 }
 
+if (TRUENAS_URL.startsWith('http://')) {
+  console.error('Warning: TrueNAS revokes API keys used over HTTP. Use HTTPS.');
+}
+
 const method = process.argv[2];
-const params = process.argv[3] ? JSON.parse(process.argv[3]) : [];
 
 if (!method) {
   console.error('Usage: truenas-ws.mjs <method> [params_json]');
   console.error('Example: truenas-ws.mjs system.info');
+  process.exit(1);
+}
+
+let params;
+try {
+  params = process.argv[3] ? JSON.parse(process.argv[3]) : [];
+} catch (e) {
+  console.error(`Error: Invalid JSON parameter: ${e.message}`);
+  console.error(`Received: ${process.argv[3]}`);
   process.exit(1);
 }
 
@@ -37,13 +49,22 @@ const ws = new WebSocket(wsUrl, { rejectUnauthorized: false });
 let msgId = 1;
 
 ws.on('open', () => {
+  console.error('Connected to TrueNAS WebSocket');
   ws.send(JSON.stringify({ msg: 'connect', version: '1', support: ['1'] }));
 });
 
 ws.on('message', (data) => {
-  const msg = JSON.parse(data.toString());
+  let msg;
+  try {
+    msg = JSON.parse(data.toString());
+  } catch (e) {
+    console.error('Error: Failed to parse server response:', e.message);
+    ws.close();
+    process.exit(1);
+  }
 
   if (msg.msg === 'connected') {
+    console.error('Authenticating...');
     ws.send(JSON.stringify({
       id: String(msgId++),
       msg: 'method',
@@ -55,6 +76,7 @@ ws.on('message', (data) => {
 
   if (msg.id === '1') {
     if (msg.result === true) {
+      console.error('Authenticated. Calling', method);
       ws.send(JSON.stringify({
         id: String(msgId++),
         msg: 'method',
@@ -80,13 +102,20 @@ ws.on('message', (data) => {
   }
 });
 
+ws.on('close', (code) => {
+  if (code !== 1000) {
+    console.error('WebSocket closed unexpectedly (code:', code + ')');
+    process.exit(1);
+  }
+});
+
 ws.on('error', (err) => {
   console.error('WebSocket error:', err.message);
   process.exit(1);
 });
 
 setTimeout(() => {
-  console.error('Timeout');
+  console.error('Timeout: No response after 30s');
   ws.close();
   process.exit(1);
 }, 30000);

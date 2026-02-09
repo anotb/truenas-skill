@@ -15,6 +15,13 @@ CALIBRE_WEB_URL                      — Ebook library (session auth, no API key
 ## Audiobookshelf
 
 ```bash
+# Health check
+curl -s "$AUDIOBOOKSHELF_URL/healthcheck"
+
+# Verify auth
+curl -s -X POST "$AUDIOBOOKSHELF_URL/api/authorize" \
+  -H "Authorization: Bearer $AUDIOBOOKSHELF_API_KEY"
+
 # Libraries
 curl -s "$AUDIOBOOKSHELF_URL/api/libraries" -H "Authorization: Bearer $AUDIOBOOKSHELF_API_KEY"
 

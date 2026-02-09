@@ -27,33 +27,46 @@ if (!DOCKGE_PASS) {
   process.exit(1);
 }
 
-const socket = io(DOCKGE_URL, { transports: ["websocket"] });
+const socket = io(DOCKGE_URL, { transports: ["websocket"], reconnection: false });
 
 socket.on("connect", () => {
-  console.log("Connected to Dockge");
+  console.error("Connected to Dockge");
   socket.emit("login", { username: DOCKGE_USER, password: DOCKGE_PASS, token: "" }, (r) => {
-    if (!r.ok) {
-      console.log("Login failed:", r.msg);
+    if (!r || !r.ok) {
+      console.error("Login failed:", r?.msg || "no response from server");
       process.exit(1);
     }
-    console.log("Logged in! Fetching stacks...");
+    console.error("Logged in. Fetching stacks...");
     socket.emit("stackList");
   });
 });
 
+socket.on("connect_error", (err) => {
+  console.error("Connection failed:", err.message);
+  process.exit(1);
+});
+
 socket.on("agent", (eventType, data) => {
-  if (eventType === "stackList" && data.ok) {
-    console.log("\nStacks:");
-    Object.entries(data.stackList).forEach(([name, v]) => {
-      console.log(`- ${name}: Status ${v.status} ${v.status === 3 ? "(Running)" : "(Stopped)"}`);
-    });
+  if (eventType === "stackList") {
+    if (!data || !data.ok) {
+      console.error("Error: stackList failed:", data?.msg || "unknown error");
+      process.exit(1);
+    }
+    console.log(JSON.stringify(
+      Object.entries(data.stackList).map(([name, v]) => ({
+        name,
+        status: v.status,
+        state: v.status === 3 ? "running" : "stopped"
+      })),
+      null, 2
+    ));
     socket.disconnect();
     process.exit(0);
   }
 });
 
 setTimeout(() => {
-  console.log("\nTimeout");
+  console.error("Timeout: No response after 10s");
   socket.disconnect();
   process.exit(1);
 }, 10000);

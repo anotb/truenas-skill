@@ -29,19 +29,26 @@ if (!DOCKGE_PASS) {
 }
 
 const specificStacks = process.argv.slice(2);
-const socket = io(DOCKGE_URL, { transports: ["websocket"] });
+const socket = io(DOCKGE_URL, { transports: ["websocket"], reconnection: false });
 
 function updateStacks(stacks) {
-  console.log(`\nUpdating ${stacks.length} stacks...`);
+  if (stacks.length === 0) {
+    console.error("No stacks to update.");
+    socket.disconnect();
+    process.exit(0);
+  }
+
+  console.error(`Updating ${stacks.length} stacks...`);
 
   stacks.forEach((name, i) => {
     setTimeout(() => {
       socket.emit("agent", "", "updateStack", name, () => {});
-      console.log(`  Updated: ${name}`);
+      console.error(`  Update requested: ${name}`);
 
       if (i === stacks.length - 1) {
         setTimeout(() => {
-          console.log("\nAll updateStack commands sent!");
+          console.error("All updateStack commands sent.");
+          console.log(JSON.stringify({ updated: stacks }));
           socket.disconnect();
           process.exit(0);
         }, 1000);
@@ -51,13 +58,13 @@ function updateStacks(stacks) {
 }
 
 socket.on("connect", () => {
-  console.log("Connected to Dockge");
+  console.error("Connected to Dockge");
   socket.emit("login", { username: DOCKGE_USER, password: DOCKGE_PASS, token: "" }, (r) => {
-    if (!r.ok) {
-      console.log("Login failed:", r.msg);
+    if (!r || !r.ok) {
+      console.error("Login failed:", r?.msg || "no response from server");
       process.exit(1);
     }
-    console.log("Logged in!");
+    console.error("Logged in.");
 
     if (specificStacks.length > 0) {
       updateStacks(specificStacks);
@@ -67,20 +74,29 @@ socket.on("connect", () => {
   });
 });
 
+socket.on("connect_error", (err) => {
+  console.error("Connection failed:", err.message);
+  process.exit(1);
+});
+
 socket.on("agent", (eventType, data) => {
-  if (eventType === "stackList" && data.ok) {
+  if (eventType === "stackList") {
+    if (!data || !data.ok) {
+      console.error("Error: stackList failed:", data?.msg || "unknown error");
+      process.exit(1);
+    }
     const running = Object.entries(data.stackList)
       .filter(([name, v]) => v.status === 3 && !name.startsWith("ix-"))
       .map(([k]) => k)
       .sort();
 
-    console.log(`\nFound ${running.length} running stacks`);
+    console.error(`Found ${running.length} running stacks`);
     updateStacks(running);
   }
 });
 
 setTimeout(() => {
-  console.log("\nTimeout");
+  console.error("Timeout: No response after 120s");
   socket.disconnect();
   process.exit(1);
 }, 120000);
