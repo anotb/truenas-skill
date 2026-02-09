@@ -9,7 +9,7 @@ license: MIT
 compatibility: Requires curl, jq, and Node.js 18+. Network access to TrueNAS instance.
 metadata:
   author: anotb
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # TrueNAS SCALE Skill
