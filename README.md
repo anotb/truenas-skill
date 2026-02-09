@@ -4,6 +4,8 @@ An AI agent skill for managing TrueNAS SCALE via its API. Check pool health, man
 
 Works with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenClaw](https://github.com/openclaw/openclaw), [Cursor](https://cursor.com), and any tool supporting the [SKILL.md](https://agentskills.io) standard.
 
+Part of [unsol.dev](https://unsol.dev)
+
 ## Prerequisites
 
 - TrueNAS SCALE instance with API access
