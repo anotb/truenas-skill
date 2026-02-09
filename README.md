@@ -2,7 +2,7 @@
 
 An AI agent skill for managing TrueNAS SCALE via its API. Check pool health, manage datasets and snapshots, monitor alerts, control apps, orchestrate Dockge container stacks, and manage bookmarks — all through natural language.
 
-Works with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenClaw](https://openclaw.com), [Cursor](https://cursor.com), and any tool supporting the [Agent Skills](https://github.com/anthropics/agent-skills) standard.
+Works with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenClaw](https://github.com/openclaw/openclaw), [Cursor](https://cursor.com), and any tool supporting the [SKILL.md](https://agentskills.io) standard.
 
 ## Prerequisites
 
