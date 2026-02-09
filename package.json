@@ -1,0 +1,10 @@
+{
+  "name": "truenas-skill",
+  "version": "1.0.0",
+  "description": "AI agent skill for managing TrueNAS SCALE via API",
+  "type": "module",
+  "dependencies": {
+    "socket.io-client": "^4.8.3",
+    "ws": "^8.18.0"
+  }
+}
