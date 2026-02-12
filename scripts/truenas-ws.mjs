@@ -44,7 +44,8 @@ try {
 }
 
 const wsUrl = TRUENAS_URL.replace('https://', 'wss://').replace('http://', 'ws://') + '/websocket';
-const ws = new WebSocket(wsUrl, { rejectUnauthorized: false });
+const rejectUnauthorized = process.env.TRUENAS_VERIFY_TLS === '1';
+const ws = new WebSocket(wsUrl, { rejectUnauthorized });
 
 let msgId = 1;
 

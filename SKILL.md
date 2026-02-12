@@ -6,10 +6,9 @@ description: >
   and manage bookmarks. Use when the user asks about their NAS, storage, backups,
   containers, bookmarks, or homelab services.
 license: MIT
+homepage: https://github.com/anotb/truenas-skill
 compatibility: Requires curl, jq, and Node.js 18+. Network access to TrueNAS instance.
-metadata:
-  author: anotb
-  version: "1.1.0"
+metadata: {"author": "anotb", "version": "1.2.0", "openclaw": {"requires": {"env": ["TRUENAS_URL", "TRUENAS_API_KEY"], "bins": ["curl", "jq", "node"]}, "primaryEnv": "TRUENAS_API_KEY"}}
 ---
 
 # TrueNAS SCALE Skill
@@ -23,6 +22,12 @@ Manage a TrueNAS SCALE server and its apps via the TrueNAS API and Dockge Socket
 ```
 TRUENAS_URL       — TrueNAS base URL (e.g., https://10.0.0.5:444)
 TRUENAS_API_KEY   — API key from TrueNAS UI → API Keys
+```
+
+### Optional: TLS Configuration
+
+```
+TRUENAS_VERIFY_TLS  — Set to "1" to enforce TLS certificate validation (default: skip for self-signed certs)
 ```
 
 ### Optional: Dockge (Docker Compose UI)
@@ -97,6 +102,12 @@ send: {"id": "3", "msg": "method", "method": "app.query", "params": []}
 ```
 
 Use the helper script for WebSocket calls: `node scripts/truenas-ws.mjs <method> [params_json]`
+
+## Security Notes
+
+- **Self-signed certificates:** TLS verification is skipped by default (`curl -k`, `rejectUnauthorized: false`) because homelab servers typically use self-signed certs. Set `TRUENAS_VERIFY_TLS=1` to enforce strict TLS validation.
+- **API key scope:** Use a read-only or least-privilege API key when possible. TrueNAS lets you scope keys to specific endpoints.
+- **Credentials stay local:** All env vars are read at runtime and sent only to the configured service endpoints. Nothing is phoned home.
 
 ## Core Operations
 
