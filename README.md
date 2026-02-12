@@ -1,5 +1,8 @@
 # TrueNAS Skill
 
+[![ClawHub](https://img.shields.io/badge/ClawHub-truenas--skill-blue)](https://clawhub.ai/skills/truenas-skill)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 An AI agent skill for managing TrueNAS SCALE via its API. Check pool health, manage datasets and snapshots, monitor alerts, control apps, orchestrate Dockge container stacks, and manage bookmarks — all through natural language.
 
 Works with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenClaw](https://github.com/openclaw/openclaw), [Cursor](https://cursor.com), and any tool supporting the [SKILL.md](https://agentskills.io) standard.
